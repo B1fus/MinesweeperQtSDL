@@ -1,19 +1,20 @@
 #include "../include/MinesweeperWidget.hpp"
 
 void MinesweeperWidget::Init() {
-    _map.setCountMines(50);
-    _map.setTileSize(16);
-    _map.setMapSize(30,20);
-    _map.generateRandomMap();
+    map.setCountMines(50);
+    map.setTileSize(16);
+    map.setMapSize(30,20);
+    map.generateRandomMap();
 
-    this->setFixedSize(_map.getTileSize()*_map.getMapSize().x,
-                       _map.getTileSize()*_map.getMapSize().y);
+    this->setFixedSize(map.getTileSize()*map.getMapSize().x,
+                       map.getTileSize()*map.getMapSize().y);
 
-    MapTile::initTiles("../data/tiles16.png", _map.getTileSize());
+    MapTile::initTiles("../data/tiles16.png", map.getTileSize());
 }
 
 void MinesweeperWidget::Update() {
-    _map.renderUserMap(renderer);
+    SDL_RenderClear(renderer);
+    map.renderUserMap(renderer);
     SDL_RenderPresent(renderer);
 }
 
@@ -24,27 +25,27 @@ void MinesweeperWidget::OnResize(int w, int h) {
 void MinesweeperWidget::mouseReleaseEvent(QMouseEvent *event){
     if(_gameOverCode == 0){
         if(event->button() == Qt::RightButton)
-            _map.toggleFlag(event->x(), event->y());
+            map.toggleFlag(event->x(), event->y());
         else if(event->button() == Qt::LeftButton){
-            int8_t code = _map.openTile(event->x(), event->y());
+            int8_t code = map.openTile(event->x(), event->y());
             if(code == 1) _gameOverCode = 1;
-            else if(_map.getCountOpenedTiles() >= _map.getMapSize().x * _map.getMapSize().y - _map.getCountMines()) _gameOverCode = 2;
+            else if(map.getCountOpenedTiles() >= map.getMapSize().x * map.getMapSize().y - map.getCountMines()) _gameOverCode = 2;
         }
     }
-    if(_gameOverCode == 1) _map.showAllMinesInUserMap();
+    if(_gameOverCode == 1) map.showAllMinesInUserMap();
 }
 
 auto MapTile::tileSurfaces = std::map<int32_t, std::shared_ptr<SDL_Surface>>{};
 
 void MapTile::render(SDL_Renderer* renderer, uint32_t tileSize){
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, tileSurfaces[type].get());
-    SDL_Rect* tilePos = new SDL_Rect{pos.x, pos.y, (int)tileSize, (int)tileSize};
-    SDL_RenderCopy(renderer, texture, NULL, tilePos);
+    SDL_Rect tilePos{pos.x, pos.y, (int)tileSize, (int)tileSize};
+    SDL_RenderCopy(renderer, texture, NULL, &tilePos);
     
-    free(tilePos);
     SDL_DestroyTexture(texture);
 }
 
+//init MapTile::tileSurfaces. Need call once at init wiget
 void MapTile::initTiles(std::string tilesPath, uint32_t tileSize){
     tileSurfaces.clear();
 
@@ -52,9 +53,8 @@ void MapTile::initTiles(std::string tilesPath, uint32_t tileSize){
     std::string path(basePath);
     path += tilesPath;
     free(basePath);
-    //todo: free all pointers from sdl, cuz memory leak 
+    
     SDL_Surface* tileset = IMG_Load(path.c_str());
-    std::cout << tileset<<"\n";
     SDL_Rect cut{0,0,(int)16,(int)16}, paste{0,0,(int)tileSize,(int)tileSize};
     SDL_Surface *newTile;
 
@@ -136,6 +136,14 @@ void Map::_setRandomMine(){
     }
 }
 
+//call clear for map and usermap and set count flags and opened tiles = 0
+void Map::_clearMaps(){
+    _countFlags = 0;
+    _countOpenedTiles = 0;
+    _map.clear();
+    _userMap.clear();
+}
+
 void Map::showAllMinesInUserMap(){
     for(int i = 0; i<_width; i++){
         for(int j = 0; j<_height; j++){
@@ -176,8 +184,7 @@ int32_t Map::openTile(uint32_t x, uint32_t y){
         }
         else return 1;
     }
-
-    _countOpenedTiles++;
+    if(openedTile != 0) _countOpenedTiles++;
 
     return 0;
 }
@@ -211,10 +218,10 @@ void Map::renderUserMap(SDL_Renderer* renderer)
     }
 }
 
+//clear maps and generate new
 void Map::generateRandomMap()
 {
-    _map.clear();
-    _userMap.clear();
+    _clearMaps();
     for(int32_t x = 0; x<_width; x++){
         _map.push_back(std::vector<MapTile>{});
         for(int32_t y = 0; y<_height; y++){
@@ -258,4 +265,11 @@ inline Point2<uint32_t> Map::getMapSize() const{
 
 inline uint32_t Map::getCountOpenedTiles() const{
     return _countOpenedTiles;
+}
+
+MinesweeperWidget::MinesweeperWidget(QWidget* parent): SDLWidget(parent) {}
+
+void MinesweeperWidget::resetGame(){
+    map.generateRandomMap();
+    _gameOverCode = 0;
 }

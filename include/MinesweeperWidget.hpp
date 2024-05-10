@@ -24,7 +24,6 @@ struct Point2{
     }
 };
 
-
 struct MapTile{
     enum Type{NotVisited = 10, Flag = 11, VisitedMine = 12,
               Mine = 13
@@ -39,6 +38,8 @@ struct MapTile{
     MapTile(Point2<int32_t> pos, int32_t type = Type::NotVisited):pos(pos), type(type){}
     
     void render(SDL_Renderer* renderer, uint32_t tileSize);
+
+    ~MapTile() = default;
 };
 
 
@@ -55,6 +56,7 @@ class Map{
     int32_t _recursiveOpenTile(uint32_t x, uint32_t y);
     int32_t _openTile(uint32_t x, uint32_t y);
     void _setRandomMine();
+    void _clearMaps();
 
 public:
     int32_t openTile(uint32_t x, uint32_t y);
@@ -74,6 +76,8 @@ public:
     Point2<uint32_t> getMapSize() const;
     uint32_t getCountFlags() const;
     uint32_t getCountOpenedTiles() const;
+
+    ~Map() = default;
 };
 
 
@@ -81,13 +85,19 @@ public:
 class MinesweeperWidget : public SDLWidget
 {
 public:
-    MinesweeperWidget(QWidget* parent) : SDLWidget(parent) {}
-    Map _map;
+    Map map;
+
+    MinesweeperWidget(QWidget* parent);
+
+    void resetGame();
+    
 private:
     int8_t _gameOverCode = 0; // 0-not over, 1-lose, 2-win
 
-    void Init();
-    void Update();
-    void OnResize(int w, int h);
+    void Init() override;
+    void Update() override;
+    void OnResize(int w, int h) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+
+    ~MinesweeperWidget() = default;
 };

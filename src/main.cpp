@@ -3,10 +3,11 @@
 #include <QtCore>
 #include <SDL2/SDL.h>
 #include "../include/MinesweeperWidget.hpp"
+#include "../include/GameMainWindow.hpp"
 
 int main(int argc, char *argv[]){
     SDL_Init(SDL_INIT_EVERYTHING);
-    QApplication a(argc,argv);
+    QApplication app(argc,argv);
     // QMainWindow *Wnd = new QMainWindow;
     // Wnd->resize(810,610);  // for fill up the QMGL, menu and toolbars
     // Wnd->setWindowTitle("QMathGL sample");
@@ -24,21 +25,7 @@ int main(int argc, char *argv[]){
 
     // Wnd->setCentralWidget(centrWid);
     
-    QWidget* sdlWidgetContainer = new QWidget();
-    MinesweeperWidget* sdlWidget = new MinesweeperWidget(sdlWidgetContainer);
-    auto *gridLayout = new QGridLayout();
-    gridLayout->addWidget(sdlWidget, 1, 1, Qt::AlignTop | Qt::AlignLeft);
-    sdlWidgetContainer->setLayout(gridLayout);
+    GameMainWindow* mainWindow = new GameMainWindow();
 
-    QPushButton* button = new QPushButton("Button");
-    QVBoxLayout* layout = new QVBoxLayout;
-    layout->addWidget(sdlWidgetContainer);
-    layout->addWidget(button);
-
-    QWidget widget;
-    widget.setLayout(layout);
-    widget.resize(640, 480);
-    widget.show();
-
-    return a.exec();
+    return app.exec();
 }
