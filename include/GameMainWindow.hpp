@@ -12,6 +12,7 @@ private:
 
 private slots:
     void _applySettings();
+    void _cancelSettings();
     
 public:
     MinesweeperSettingsWidget(MinesweeperWidget* msWidget);
