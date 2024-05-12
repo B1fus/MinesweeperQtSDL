@@ -39,9 +39,16 @@ MinesweeperSettingsWidget::MinesweeperSettingsWidget(MinesweeperWidget* msWidget
     heightLay->addWidget(_mapHeightEdit);
     layout->addWidget(heightWid);
 
-    QPushButton* applyButton = new QPushButton("Apply");
-    connect(applyButton, &QPushButton::released, this, &MinesweeperSettingsWidget::_applySettings);
-    layout->addWidget(applyButton);
+    QWidget* butnsWid = new QWidget();
+    QHBoxLayout* butnsLay = new QHBoxLayout();
+    butnsWid->setLayout(butnsLay);
+        QPushButton* applyButton = new QPushButton("Apply");
+        QPushButton* cancelButton = new QPushButton("Cancel");
+        connect(applyButton, &QPushButton::released, this, &MinesweeperSettingsWidget::_applySettings);
+        connect(cancelButton, &QPushButton::released, this, &MinesweeperSettingsWidget::_cancelSettings);
+    butnsLay->addWidget(cancelButton);
+    butnsLay->addWidget(applyButton);
+    layout->addWidget(butnsWid);
 
 }
 
@@ -65,6 +72,14 @@ void MinesweeperSettingsWidget::_applySettings(){
     _minesweeperWid->map.setCountMines(minesCount);
 
     _minesweeperWid->resetGame();
+    this->hide();
+}
+
+void MinesweeperSettingsWidget::_cancelSettings(){
+    _mapWidthEdit->setText(QString::number(_minesweeperWid->map.getMapSize().x));
+    _mapHeightEdit->setText(QString::number(_minesweeperWid->map.getMapSize().y));
+    _minesEdit->setText(QString::number(_minesweeperWid->map.getCountMines()));
+    this->hide();
 }
 
 GameMainWindow::GameMainWindow():QMainWindow() {
