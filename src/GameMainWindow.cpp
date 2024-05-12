@@ -17,6 +17,28 @@ MinesweeperSettingsWidget::MinesweeperSettingsWidget(MinesweeperWidget* msWidget
     minesLay->addWidget(_minesEdit);
     layout->addWidget(minesWid);
 
+    QWidget* widthWid = new QWidget();
+    QHBoxLayout* widthLay = new QHBoxLayout();
+    widthWid->setLayout(widthLay);
+        QLabel* widthLab = new QLabel("Width: ");
+        _mapWidthEdit = new QLineEdit();
+        _mapWidthEdit->setValidator(new QIntValidator(this));
+        _mapWidthEdit->setText(QString::number(_minesweeperWid->map.getMapSize().x));
+    widthLay->addWidget(widthLab);
+    widthLay->addWidget(_mapWidthEdit);
+    layout->addWidget(widthWid);
+
+    QWidget* heightWid = new QWidget();
+    QHBoxLayout* heightLay = new QHBoxLayout();
+    heightWid->setLayout(heightLay);
+        QLabel* heightLab = new QLabel("Height: ");
+        _mapHeightEdit = new QLineEdit();
+        _mapHeightEdit->setValidator(new QIntValidator(this));
+        _mapHeightEdit->setText(QString::number(_minesweeperWid->map.getMapSize().y));
+    heightLay->addWidget(heightLab);
+    heightLay->addWidget(_mapHeightEdit);
+    layout->addWidget(heightWid);
+
     QPushButton* applyButton = new QPushButton("Apply");
     connect(applyButton, &QPushButton::released, this, &MinesweeperSettingsWidget::_applySettings);
     layout->addWidget(applyButton);
@@ -24,6 +46,16 @@ MinesweeperSettingsWidget::MinesweeperSettingsWidget(MinesweeperWidget* msWidget
 }
 
 void MinesweeperSettingsWidget::_applySettings(){
+    int widthMap = _mapWidthEdit->text().toInt();
+    if(widthMap<=0) _mapWidthEdit->setText("1");
+    widthMap = _mapWidthEdit->text().toInt();
+
+    int heightMap = _mapHeightEdit->text().toInt();
+    if(heightMap<=0) _mapHeightEdit->setText("1");
+    heightMap = _mapHeightEdit->text().toInt();
+
+    _minesweeperWid->map.setMapSize(widthMap, heightMap);
+
     int minesCount = _minesEdit->text().toInt();
     if(minesCount > (_minesweeperWid->map.getMapSize().x * _minesweeperWid->map.getMapSize().y) / 2)
         _minesEdit->setText(QString::number((_minesweeperWid->map.getMapSize().x * _minesweeperWid->map.getMapSize().y) / 2));
@@ -81,7 +113,6 @@ GameMainWindow::GameMainWindow():QMainWindow() {
     connect(button1, &QPushButton::released, this, &GameMainWindow::_handleResetGame);
     layoutRight->addWidget(button1);
     QPushButton* button2 = new QPushButton("Button");
-    connect(button2, &QPushButton::released, this, &GameMainWindow::_timerLoop);
     layoutRight->addWidget(button2);
     layout->addStretch(1);
     layout->addWidget(widgetContaiterRight);
@@ -103,11 +134,19 @@ GameMainWindow::GameMainWindow():QMainWindow() {
     _gameMenu->addAction(_openSettingWindowAct);
     connect(_openSettingWindowAct, &QAction::triggered, this, &GameMainWindow::_openSettingWindow);
 
+    //connect and create ui things
+    connect(_minesweeperWid, &MinesweeperWidget::gameCodeChanged, this, &GameMainWindow::_gameCodeChanged);
+    _updateTimerForRoundTimer = new QTimer(this);
+    connect(_updateTimerForRoundTimer, &QTimer::timeout, this, &GameMainWindow::_timerLoop);
+    
+    connect(_minesweeperWid, &MinesweeperWidget::flagToggeled, this, &GameMainWindow::_updateCountMines);
+    _updateCountMines();
 }
 
 void GameMainWindow::_handleResetGame(){
     _roundTimer.restart();
     _minesweeperWid->resetGame();
+    _updateCountMines();
 }
 
 void GameMainWindow::_openSettingWindow(){
@@ -115,10 +154,38 @@ void GameMainWindow::_openSettingWindow(){
 }
 
 void GameMainWindow::_timerLoop(){
-    QTime currTime;
-    qint64 tEl = _roundTimer.elapsed();
-    currTime = currTime.addMSecs(tEl);
-    QString str = QString("%1:%2").arg( tEl / 60000        , 2, 10, QChar('0'))
-                                  .arg((tEl % 60000) / 1000, 2, 10, QChar('0'));
+    qint64 tEl = _roundTimer.elapsed() / 1000;
+    QString str = QString("%1:%2:%3").arg(  tEl / 3600       , 2, 10, QChar('0'))
+                                     .arg( (tEl % 3600) / 60 , 2, 10, QChar('0'))
+                                     .arg( (tEl % 60)        , 2, 10, QChar('0'));
     _timerLabel->setText(str);
+}
+
+void GameMainWindow::_gameCodeChanged(uint8_t gameCode){
+    switch (gameCode)
+    {
+    case 0:
+        _roundTimer.restart();
+        _timerLoop();
+        _updateTimerForRoundTimer->stop();
+        break;
+    case 1: //game started, first click
+        _roundTimer.restart();
+        _updateTimerForRoundTimer->start(400);
+        break;
+    case 2: //game lose
+        _updateTimerForRoundTimer->stop();
+        break;
+    case 3: //game win
+        _updateTimerForRoundTimer->stop();
+        break;
+    default:
+        break;
+    }
+}
+
+void GameMainWindow::_updateCountMines(){
+    _minesCountLabel->setText(QString::number(
+        static_cast<int>(_minesweeperWid->map.getCountMines()) - static_cast<int>(_minesweeperWid->map.getCountFlags())
+        ));
 }

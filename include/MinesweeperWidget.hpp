@@ -5,6 +5,7 @@
 #include <SDL2/SDL_image.h>
 #include <stack>
 #include <iostream>
+#include <QtMultimedia>
 
 template <typename T>
 struct Point2{
@@ -84,6 +85,7 @@ public:
 
 class MinesweeperWidget : public SDLWidget
 {
+Q_OBJECT
 public:
     Map map;
 
@@ -92,12 +94,17 @@ public:
     void resetGame();
     
 private:
-    int8_t _gameOverCode = 0; // 0-not over, 1-lose, 2-win
+    int8_t _gameCode = 0; // 0-not started, 1-started, 2-lose, 3-win
+    QMediaPlayer* _mediaPlayer;
 
     void Init() override;
     void Update() override;
     void OnResize(int w, int h) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
 
-    ~MinesweeperWidget() = default;
+    virtual ~MinesweeperWidget() override = default;
+
+signals:
+    void gameCodeChanged(int8_t gameCode);
+    void flagToggeled();
 };

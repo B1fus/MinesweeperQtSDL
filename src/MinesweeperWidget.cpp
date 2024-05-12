@@ -10,6 +10,13 @@ void MinesweeperWidget::Init() {
                        map.getTileSize()*map.getMapSize().y);
 
     MapTile::initTiles("../data/tiles16.png", map.getTileSize());
+
+    //play start sound
+    _mediaPlayer = new QMediaPlayer;
+    _mediaPlayer->setSource(QUrl::fromLocalFile("../data/sounds/start.wav"));
+    _mediaPlayer->setAudioOutput(new QAudioOutput);
+    _mediaPlayer->audioOutput()->setVolume(0.25);
+    _mediaPlayer->play();
 }
 
 void MinesweeperWidget::Update() {
@@ -23,16 +30,35 @@ void MinesweeperWidget::OnResize(int w, int h) {
 }
 
 void MinesweeperWidget::mouseReleaseEvent(QMouseEvent *event){
-    if(_gameOverCode == 0){
+    if(_gameCode == 0){
+        _gameCode = 1;
+        emit gameCodeChanged(_gameCode);
+    }
+    if(_gameCode == 1){
         if(event->button() == Qt::RightButton)
             map.toggleFlag(event->x(), event->y());
         else if(event->button() == Qt::LeftButton){
             int8_t code = map.openTile(event->x(), event->y());
-            if(code == 1) _gameOverCode = 1;
-            else if(map.getCountOpenedTiles() >= map.getMapSize().x * map.getMapSize().y - map.getCountMines()) _gameOverCode = 2;
+            _mediaPlayer->setSource(QUrl()); //reset sound
+            if(code == 0){ //if some tiles opened
+                _mediaPlayer->setSource(QUrl::fromLocalFile("../data/sounds/click.wav"));
+            }
+            if(code == 1){ // lose
+                _gameCode = 2;
+                _mediaPlayer->setSource(QUrl::fromLocalFile("../data/sounds/lose.wav"));
+                emit gameCodeChanged(_gameCode);
+            }
+            //win
+            else if(map.getCountOpenedTiles() >= map.getMapSize().x * map.getMapSize().y - map.getCountMines()){
+                _gameCode = 3;
+                _mediaPlayer->setSource(QUrl::fromLocalFile("../data/sounds/win.wav"));
+                emit gameCodeChanged(_gameCode);
+            }
+            _mediaPlayer->play();
         }
+        emit flagToggeled();
     }
-    if(_gameOverCode == 1) map.showAllMinesInUserMap();
+    if(_gameCode == 2) map.showAllMinesInUserMap();
 }
 
 auto MapTile::tileSurfaces = std::map<int32_t, std::shared_ptr<SDL_Surface>>{};
@@ -94,9 +120,12 @@ int32_t Map::_recursiveOpenTile(uint32_t x, uint32_t y){
 
         if(p.x>=_width || p.y>=_height || 
            _map[p.x][p.y].type == MapTile::Type::Mine ||
-           _userMap[p.x][p.y].type != MapTile::Type::NotVisited) continue;
+           (_userMap[p.x][p.y].type != MapTile::Type::NotVisited &&
+           _userMap[p.x][p.y].type != MapTile::Type::Flag
+           )) continue;
 
         int countMines = _getCountNearMines(p.x, p.y);
+        if(_userMap[p.x][p.y].type == MapTile::Type::Flag) _countFlags--;
         _userMap[p.x][p.y].type = countMines;
         _countOpenedTiles++;
 
@@ -158,6 +187,7 @@ void Map::showAllMinesInUserMap(){
 //return 1 if clicked to mine
 //return 2 if wrong x or y coordinates
 //return 3 if clicked to flag
+//return 4 if clicked on not NotVisited tile
 int32_t Map::openTile(uint32_t x, uint32_t y){
 
     Point2<uint32_t> p(x, y);
@@ -165,6 +195,7 @@ int32_t Map::openTile(uint32_t x, uint32_t y){
 
     if(p.x >= _width || p.y >= _height) return 2;
     if(_userMap[p.x][p.y].type == MapTile::Type::Flag) return 3;
+    if(_userMap[p.x][p.y].type != MapTile::Type::NotVisited) return 4;
 
     int32_t openedTile = _openTile(p.x, p.y);
 
@@ -221,6 +252,7 @@ void Map::renderUserMap(SDL_Renderer* renderer)
 //clear maps and generate new
 void Map::generateRandomMap()
 {
+    getCountFlags();//idk why, but without this will be undefined reference to getCountFlags method error
     _clearMaps();
     for(int32_t x = 0; x<_width; x++){
         _map.push_back(std::vector<MapTile>{});
@@ -263,6 +295,10 @@ inline Point2<uint32_t> Map::getMapSize() const{
     return {_width, _height};
 }
 
+inline uint32_t Map::getCountFlags() const{
+    return _countFlags;
+}
+
 inline uint32_t Map::getCountOpenedTiles() const{
     return _countOpenedTiles;
 }
@@ -271,5 +307,8 @@ MinesweeperWidget::MinesweeperWidget(QWidget* parent): SDLWidget(parent) {}
 
 void MinesweeperWidget::resetGame(){
     map.generateRandomMap();
-    _gameOverCode = 0;
+    _gameCode = 0;
+    this->setFixedSize(map.getTileSize()*map.getMapSize().x,
+                       map.getTileSize()*map.getMapSize().y);
+    emit gameCodeChanged(_gameCode);
 }

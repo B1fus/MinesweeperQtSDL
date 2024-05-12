@@ -11,6 +11,7 @@
 
 class SDLWidget : public QWidget
 {
+Q_OBJECT
 public :
   SDLWidget(QWidget* parent);
   virtual ~SDLWidget() override;
