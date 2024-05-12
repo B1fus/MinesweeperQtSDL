@@ -24,6 +24,7 @@ private:
     MinesweeperWidget* _minesweeperWid;
     QLabel* _minesCountLabel;
     QLabel* _timerLabel;
+    QLabel* _gameStatus;
     QMenu* _gameMenu;
     QElapsedTimer _roundTimer;
     QTimer* _updateTimerForRoundTimer;

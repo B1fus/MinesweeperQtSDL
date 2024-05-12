@@ -83,8 +83,8 @@ void MinesweeperSettingsWidget::_cancelSettings(){
 }
 
 GameMainWindow::GameMainWindow():QMainWindow() {
+    //ui
     QWidget* sdlWidgetContainer = new QWidget();
-    //QWidget* sdlWidget = new QWidget();
     _minesweeperWid = new MinesweeperWidget(sdlWidgetContainer);
     auto *gridLayout = new QGridLayout();
     gridLayout->addWidget(_minesweeperWid, 1, 1, Qt::AlignTop | Qt::AlignLeft);
@@ -124,21 +124,27 @@ GameMainWindow::GameMainWindow():QMainWindow() {
 
     layoutTime->setContentsMargins(0, 0, 0, 0);
     layoutRight->addWidget(widgetTimeLabels);
+
+    _gameStatus = new QLabel("Game not started");
+    _gameStatus->setAlignment(Qt::AlignCenter);
+    layoutRight->addWidget(_gameStatus);
+
     QPushButton* button1 = new QPushButton("Restart");
     connect(button1, &QPushButton::released, this, &GameMainWindow::_handleResetGame);
     layoutRight->addWidget(button1);
-    QPushButton* button2 = new QPushButton("Button");
-    layoutRight->addWidget(button2);
+
     layout->addStretch(1);
     layout->addWidget(widgetContaiterRight);
     layout->addStretch(2);
     
+    //central widget settings
     QWidget* widget = new QWidget(this);
     this->setCentralWidget(widget);
     widget->setLayout(layout);
     widget->resize(640, 480);
     this->show();
 
+    //setting window init
     _settingWindow = new MinesweeperSettingsWidget(_minesweeperWid);
     this->resize(200,100);
 
@@ -181,17 +187,26 @@ void GameMainWindow::_gameCodeChanged(uint8_t gameCode){
     {
     case 0:
         _roundTimer.restart();
+        _gameStatus->setText("Game not started");
+        _gameStatus->setStyleSheet("QLabel {color: #000000; }");
         _timerLoop();
         _updateTimerForRoundTimer->stop();
         break;
     case 1: //game started, first click
+        _gameStatus->setText("Game continues");
+        _gameStatus->setStyleSheet("QLabel {color: #000000; }");
         _roundTimer.restart();
         _updateTimerForRoundTimer->start(400);
         break;
     case 2: //game lose
+        _gameStatus->setText("Lose");
+        _gameStatus->setStyleSheet("QLabel {color: #FF4444; }");
+        //_gameStatus->palette().setColor(QPalette::WindowText, QColor::fromRgb(200, 50, 50));
         _updateTimerForRoundTimer->stop();
         break;
     case 3: //game win
+        _gameStatus->setText("Win");
+        _gameStatus->setStyleSheet("QLabel {color: #22CC22; }");
         _updateTimerForRoundTimer->stop();
         break;
     default:
