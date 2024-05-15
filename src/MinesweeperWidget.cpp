@@ -13,9 +13,8 @@ void MinesweeperWidget::Init() {
 
     //play start sound
     _mediaPlayer = new QMediaPlayer;
-    _mediaPlayer->setSource(QUrl::fromLocalFile("../data/sounds/start.wav"));
-    _mediaPlayer->setAudioOutput(new QAudioOutput);
-    _mediaPlayer->audioOutput()->setVolume(0.25);
+    _mediaPlayer->setMedia(QUrl::fromLocalFile(QApplication::applicationDirPath() + "/../data/sounds/start.wav"));
+    _mediaPlayer->setVolume(25);
     _mediaPlayer->play();
 }
 
@@ -39,19 +38,19 @@ void MinesweeperWidget::mouseReleaseEvent(QMouseEvent *event){
             map.toggleFlag(event->x(), event->y());
         else if(event->button() == Qt::LeftButton){
             int8_t code = map.openTile(event->x(), event->y());
-            _mediaPlayer->setSource(QUrl()); //reset sound
+            _mediaPlayer->setMedia(QUrl()); //reset sound
             if(code == 0){ //if some tiles opened
-                _mediaPlayer->setSource(QUrl::fromLocalFile("../data/sounds/click.wav"));
+                _mediaPlayer->setMedia(QUrl::fromLocalFile(QApplication::applicationDirPath() + "/../data/sounds/click.wav"));
             }
             if(code == 1){ // lose
                 _gameCode = 2;
-                _mediaPlayer->setSource(QUrl::fromLocalFile("../data/sounds/lose.wav"));
+                _mediaPlayer->setMedia(QUrl::fromLocalFile(QApplication::applicationDirPath() + "/../data/sounds/lose.wav"));
                 emit gameCodeChanged(_gameCode);
             }
             //win
             else if(map.getCountOpenedTiles() >= map.getMapSize().x * map.getMapSize().y - map.getCountMines()){
                 _gameCode = 3;
-                _mediaPlayer->setSource(QUrl::fromLocalFile("../data/sounds/win.wav"));
+                _mediaPlayer->setMedia(QUrl::fromLocalFile(QApplication::applicationDirPath() + "/../data/sounds/win.wav"));
                 emit gameCodeChanged(_gameCode);
             }
             _mediaPlayer->play();
@@ -61,7 +60,7 @@ void MinesweeperWidget::mouseReleaseEvent(QMouseEvent *event){
     if(_gameCode == 2) map.showAllMinesInUserMap();
 }
 
-auto MapTile::tileSurfaces = std::map<int32_t, std::shared_ptr<SDL_Surface>>{};
+std::map<int32_t, std::shared_ptr<SDL_Surface>> MapTile::tileSurfaces = std::map<int32_t, std::shared_ptr<SDL_Surface>>{};
 
 void MapTile::render(SDL_Renderer* renderer, uint32_t tileSize){
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, tileSurfaces[type].get());
@@ -151,7 +150,7 @@ int32_t Map::_openTile(uint32_t x, uint32_t y)
 }
 
 void Map::_setRandomMine(){
-    Point2 p{rand()%_width, rand()%_height};
+    Point2<uint32_t> p{rand()%_width, rand()%_height};
     while(p.y < _height){
         if(_map[p.x][p.y].type != MapTile::Type::Mine){
             _map[p.x][p.y].type = MapTile::Type::Mine;
@@ -268,7 +267,7 @@ void Map::generateRandomMap()
     }
 }
 
-inline uint32_t Map::getCountMines() const{
+uint32_t Map::getCountMines() const{
     return _countMines;
 }
 
@@ -291,11 +290,11 @@ void Map::setMapSize(uint32_t width, uint32_t height)
     _height = height;
 }
 
-inline Point2<uint32_t> Map::getMapSize() const{
+Point2<uint32_t> Map::getMapSize() const{
     return {_width, _height};
 }
 
-inline uint32_t Map::getCountFlags() const{
+uint32_t Map::getCountFlags() const{
     return _countFlags;
 }
 

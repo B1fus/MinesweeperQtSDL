@@ -18,7 +18,7 @@ SDLWidget::SDLWidget(QWidget *parent) : QWidget(parent) {
   // Create a renderer from the window. We'll use this for drawing all our stuff.
   // (NOTE this doesn't have the VSYNC flag. 
   //  It'd cause HEAVY flickering, so we'll do our own vsync.)
-  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
   if(renderer == NULL)
     throw "Can't create renderer: " + std::string(SDL_GetError());
 }
